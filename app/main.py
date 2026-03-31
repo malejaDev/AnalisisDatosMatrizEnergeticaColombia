@@ -46,6 +46,46 @@ def render_hero_header(title: str = "Matriz Energética de Colombia"):
     st.markdown(
         f"""
 <style>
+  /* ---------- Tabs UX ---------- */
+  /* Make tabs feel like a primary navigation bar */
+  div[data-testid="stTabs"] {{
+    margin-top: 0.25rem;
+  }}
+  div[data-testid="stTabs"] [data-baseweb="tab-list"] {{
+    gap: 0.35rem;
+    padding: 0.25rem 0.25rem;
+    border-radius: 14px;
+    background: rgba(15, 23, 42, 0.04);
+  }}
+  div[data-testid="stTabs"] button[data-baseweb="tab"] {{
+    padding: 0.55rem 0.85rem;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    line-height: 1.1;
+    color: rgba(15, 23, 42, 0.82);
+  }}
+  div[data-testid="stTabs"] button[data-baseweb="tab"]:hover {{
+    background: rgba(14, 165, 164, 0.10);
+    color: rgba(15, 23, 42, 0.95);
+  }}
+  /* Active tab */
+  div[data-testid="stTabs"] button[aria-selected="true"][data-baseweb="tab"] {{
+    background: rgba(14, 165, 164, 0.16);
+    color: rgba(15, 23, 42, 0.98);
+    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04) inset;
+  }}
+  /* Allow wrapping on small screens instead of truncating */
+  @media (max-width: 900px) {{
+    div[data-testid="stTabs"] [data-baseweb="tab-list"] {{
+      flex-wrap: wrap;
+    }}
+    div[data-testid="stTabs"] button[data-baseweb="tab"] {{
+      padding: 0.5rem 0.75rem;
+      font-size: 0.92rem;
+    }}
+  }}
+
   .hero-wrap {{
     width: 100%;
     border-radius: 16px;
