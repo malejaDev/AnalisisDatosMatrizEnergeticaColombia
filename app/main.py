@@ -186,6 +186,77 @@ def page_proyectos(df: pd.DataFrame):
     )
 
 
+def page_landing(raw_dir: Path):
+    st.subheader("Análisis de la Matriz Energética de Colombia (2020–2025)")
+    st.caption("Dashboard interactivo construido en Streamlit a partir de un modelo tipo estrella (dimensiones + hechos).")
+
+    c1, c2 = st.columns([1.3, 1])
+    with c1:
+        st.markdown(
+            """
+Este proyecto explora la **diversificación de la matriz eléctrica colombiana**, comparando fuentes **convencionales**
+(ej. hidráulica) vs **no convencionales** (FNCER como solar/eólica) y sus implicaciones en:
+
+- **Generación** (GWh) y **factor de planta** (%)
+- **Costos** (LCOE, CAPEX, OPEX)
+- **Cobertura** (usuarios atendidos, disponibilidad) y **regulación** (leyes/incentivos)
+- **Impacto ambiental** (CO₂ evitado, ahorro de agua)
+
+Usa filtros globales para segmentar por **fuente**, **departamento**, **proyecto** y **rango de fechas**.
+"""
+        )
+
+    with c2:
+        st.markdown("### Datos")
+        st.markdown(f"- **Fuente cargada desde**: `{raw_dir}`")
+        st.markdown(
+            """
+- **Dim_Proyecto**: ubicación, capacidad (MW), tipo de energía  
+- **Dim_TipoEnergia**: fuente, convencional/no convencional  
+- **Dim_Regulacion**: leyes e incentivos  
+- **Fact_Generacion**: serie temporal diaria (GWh, factor de planta)  
+- **Fact_Costos**: costos por proyecto/año (LCOE, CAPEX, OPEX)  
+- **Fact_Cobertura**: usuarios, disponibilidad, regulación aplicada  
+- **Fact_ImpactoAmbiental**: CO₂ evitado, ahorro de agua  
+"""
+        )
+
+    st.divider()
+    st.markdown("### Cómo leer este dashboard")
+
+    a, b, c = st.columns(3)
+    with a:
+        st.markdown(
+            """
+**Generación**
+- Observa tendencias por día/mes.
+- Compara fuentes y proyectos.
+- Revisa la variabilidad del **factor de planta**.
+"""
+        )
+    with b:
+        st.markdown(
+            """
+**Costos**
+- Relación **CAPEX vs LCOE** (tamaño = capacidad).
+- Ranking por LCOE para comparar tecnologías.
+"""
+        )
+    with c:
+        st.markdown(
+            """
+**Cobertura & Impacto**
+- Usuarios atendidos por regulación.
+- Top proyectos por **CO₂ evitado** y **ahorro de agua**.
+"""
+        )
+
+    st.info(
+        "Sugerencia: empieza aquí, luego visita **Resumen** para KPIs globales, y después profundiza en cada pestaña.",
+        icon="ℹ️",
+    )
+
+
 def main():
     st.set_page_config(page_title="Matriz Energética Colombia", layout="wide")
     st.title("Matriz Energética de Colombia (app Streamlit)")
@@ -193,27 +264,30 @@ def main():
     df, _tables, raw_dir, issues = get_data()
     filtered = apply_filters(df)
 
-    tabs = st.tabs(["Resumen", "Generación", "Costos", "Cobertura", "Impacto", "Proyectos"])
+    tabs = st.tabs(["Inicio", "Resumen", "Generación", "Costos", "Cobertura", "Impacto", "Proyectos"])
 
     with tabs[0]:
-        page_resumen(filtered, raw_dir, issues)
+        page_landing(raw_dir)
 
     with tabs[1]:
+        page_resumen(filtered, raw_dir, issues)
+
+    with tabs[2]:
         st.subheader("Generación")
         st.plotly_chart(fig_generacion_time(filtered, freq="D"), use_container_width=True, key="gen_d")
         st.plotly_chart(fig_generacion_time(filtered, freq="M"), use_container_width=True, key="gen_m")
         st.plotly_chart(fig_generacion_por_fuente(filtered), use_container_width=True, key="gen_fuente")
 
-    with tabs[2]:
+    with tabs[3]:
         page_costos(filtered)
 
-    with tabs[3]:
+    with tabs[4]:
         page_cobertura(filtered)
 
-    with tabs[4]:
+    with tabs[5]:
         page_impacto(filtered)
 
-    with tabs[5]:
+    with tabs[6]:
         page_proyectos(filtered)
 
 
