@@ -563,6 +563,14 @@ Usa filtros globales para segmentar por **fuente**, **departamento**, **proyecto
 """
         )
 
+        st.markdown("### Equipo de Desarrollo")
+        st.markdown(
+            "- Claudia Patricia Arroyave Franco\n"
+            "- Michely Muñoz Zuñiga\n"
+            "- Jesus Garcia\n"
+            "- Maria Alejandra Colorado Ríos"
+        )
+
     with c2:
         st.markdown("### Datos")
         st.markdown(f"- **Fuente cargada desde**: `{raw_dir}`")
