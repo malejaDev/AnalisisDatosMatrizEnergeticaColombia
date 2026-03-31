@@ -171,7 +171,7 @@ pip install -r requirements.txt
 2) Ejecutar:
 
 ```bash
-streamlit run app/main.py
+streamlit run streamlit_app.py
 ```
 
 <a id="licencia"></a>
