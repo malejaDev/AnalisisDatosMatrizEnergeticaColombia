@@ -1,0 +1,20 @@
+[theme]
+# Paleta inspirada en sostenibilidad/energía: verdes + teal, acento ámbar
+primaryColor = "#0EA5A4"
+backgroundColor = "#F7FAF7"
+secondaryBackgroundColor = "#EEF5F0"
+textColor = "#0F172A"
+font = "sans serif"
+
+[theme]
+base = "light"
+primaryColor = "#1D4ED8"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F3F4F6"
+textColor = "#111827"
+font = "sans serif"
+
+[server]
+runOnSave = true
+headless = true
+

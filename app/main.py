@@ -18,6 +18,7 @@ from app.viz import (
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+ASSETS_DIR = Path(__file__).resolve().parent / "assets"
 
 
 @st.cache_data(show_spinner=False)
@@ -189,6 +190,10 @@ def page_proyectos(df: pd.DataFrame):
 def page_landing(raw_dir: Path):
     st.subheader("Análisis de la Matriz Energética de Colombia (2020–2025)")
     st.caption("Dashboard interactivo construido en Streamlit a partir de un modelo tipo estrella (dimensiones + hechos).")
+
+    hero_path = ASSETS_DIR / "landing_hero.svg"
+    if hero_path.exists():
+        st.image(str(hero_path), use_container_width=True)
 
     c1, c2 = st.columns([1.3, 1])
     with c1:
