@@ -1,5 +1,5 @@
 -- Consultas de análisis para MatrizEnergeticaCol
--- Requiere haber ejecutado: Matriz_Energetica_Colombia_Completo.sql (creación de esquema + carga de datos)
+-- Requiere haber ejecutado: Matriz_Energetica_Colombia_Schema_y_Datos_2020_2025.sql (creación de esquema + carga de datos)
 
 USE MatrizEnergeticaCol;
 
