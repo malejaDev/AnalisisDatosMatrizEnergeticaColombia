@@ -21,12 +21,88 @@ from app.viz import (
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ASSETS_DIR = Path(__file__).resolve().parent / "assets"
 
+HERO_IMAGE_PATH = ASSETS_DIR / "landing_hero.svg"
+
 
 @st.cache_data(show_spinner=False)
 def get_data():
     tables, raw_dir, issues = load_tables(REPO_ROOT)
     df = build_consolidated_dataset(tables)
     return df, tables, raw_dir, issues
+
+
+def render_hero_header(title: str = "Matriz Energética de Colombia"):
+    """
+    Hero banner full-width con titulo encima (centrado y legible),
+    usando la imagen existente como fondo.
+    """
+    if not HERO_IMAGE_PATH.exists():
+        st.title(title)
+        return
+
+    b64 = base64.b64encode(HERO_IMAGE_PATH.read_bytes()).decode("ascii")
+    st.markdown(
+        f"""
+<style>
+  .hero-wrap {{
+    width: 100%;
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+    margin: 0 0 18px 0;
+    background: #0b1220;
+  }}
+  .hero-bg {{
+    width: 100%;
+    height: 240px;
+    background-image:
+      linear-gradient(180deg, rgba(15, 23, 42, 0.70) 0%, rgba(15, 23, 42, 0.45) 55%, rgba(15, 23, 42, 0.15) 100%),
+      url("data:image/svg+xml;base64,{b64}");
+    background-size: cover;
+    background-position: center;
+  }}
+  .hero-title {{
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 16px;
+    text-align: center;
+  }}
+  .hero-title h1 {{
+    margin: 0;
+    font-size: clamp(28px, 3.3vw, 48px);
+    line-height: 1.05;
+    color: rgba(255,255,255,0.96);
+    text-shadow: 0 8px 28px rgba(0,0,0,0.50);
+    letter-spacing: -0.02em;
+  }}
+  .hero-title p {{
+    margin: 10px 0 0 0;
+    color: rgba(255,255,255,0.88);
+    font-size: 15px;
+    max-width: 920px;
+  }}
+</style>
+<div class="hero-wrap">
+  <div class="hero-bg"></div>
+  <div class="hero-title">
+    <div>
+      <h1>{title}</h1>
+      <p>Explora generación, costos, cobertura, regulación e impacto ambiental con filtros globales por fuente, departamento y proyecto.</p>
+    </div>
+  </div>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
+
+
+def chart_with_info(*, title: str, info_md: str, fig, key: str):
+    st.markdown(f"### {title}")
+    with st.expander("¿Qué muestra este gráfico? ¿Cómo interpretarlo?", expanded=False):
+        st.markdown(info_md)
+    st.plotly_chart(fig, use_container_width=True, key=key)
 
 
 def apply_filters(df: pd.DataFrame) -> pd.DataFrame:
@@ -85,18 +161,63 @@ def page_resumen(df: pd.DataFrame, raw_dir: Path, issues: list[str]):
     c3.metric("Usuarios atendidos", kpi_card_value(total_usuarios, 0))
     c4.metric("CO₂ evitado (ton)", kpi_card_value(total_co2, 0))
 
-    st.plotly_chart(fig_generacion_time(df, freq="M"), use_container_width=True, key="resumen_gen_m")
+    chart_with_info(
+        title="Generación agregada mensual (GWh)",
+        info_md="""
+Resume la **energía generada** en el periodo seleccionado, agregada por mes.
+
+- Útil para ver **tendencias** y estacionalidad.
+- Si filtras por **fuente/proyecto**, verás su contribución dentro del rango.
+""",
+        fig=fig_generacion_time(df, freq="M"),
+        key="resumen_gen_m",
+    )
 
     a, b = st.columns(2)
     with a:
-        st.plotly_chart(fig_generacion_por_fuente(df), use_container_width=True, key="resumen_gen_fuente")
+        chart_with_info(
+            title="Generación total por fuente (GWh)",
+            info_md="""
+Compara la **contribución total** de cada fuente (solar, eólica, hidráulica, etc.) en el rango filtrado.
+
+- Barras más altas = mayor aporte de generación.
+- Ideal para ver la **composición** de la matriz bajo tus filtros.
+""",
+            fig=fig_generacion_por_fuente(df),
+            key="resumen_gen_fuente",
+        )
     with b:
-        st.plotly_chart(fig_factor_planta_box(df), use_container_width=True, key="resumen_factor_box")
+        chart_with_info(
+            title="Distribución del factor de planta (%)",
+            info_md="""
+El **factor de planta** mide qué tanto se utiliza la capacidad instalada de un proyecto.
+
+- La caja muestra la dispersión (mediana y cuartiles).
+- Útil para comparar **variabilidad y desempeño** entre fuentes.
+""",
+            fig=fig_factor_planta_box(df),
+            key="resumen_factor_box",
+        )
 
 
 def page_costos(df: pd.DataFrame):
     st.subheader("Costos")
-    st.plotly_chart(fig_costos_scatter(df), use_container_width=True, key="costos_scatter")
+    chart_with_info(
+        title="LCOE vs CAPEX (tamaño = capacidad MW)",
+        info_md="""
+Este diagrama relaciona:
+
+- **CAPEX (MUSD)**: inversión de capital
+- **LCOE (USD/MWh)**: costo nivelado de energía
+- **Tamaño del punto**: capacidad instalada (MW)
+
+Interpretación rápida:
+- Más abajo = menor LCOE (más competitivo).
+- A la derecha = proyectos con mayor CAPEX.
+""",
+        fig=fig_costos_scatter(df),
+        key="costos_scatter",
+    )
 
     st.divider()
     st.subheader("Tabla (último año de costos por proyecto)")
@@ -112,7 +233,17 @@ def page_costos(df: pd.DataFrame):
 
 def page_cobertura(df: pd.DataFrame):
     st.subheader("Cobertura y regulación")
-    st.plotly_chart(fig_cobertura_regulacion(df), use_container_width=True, key="cobertura_reg_bar")
+    chart_with_info(
+        title="Usuarios atendidos por regulación",
+        info_md="""
+Suma los **usuarios atendidos** (por proyecto) agrupados por la **ley/incentivo** asociado.
+
+- Útil para entender dónde se concentra la cobertura bajo cada marco regulatorio.
+- Si filtras por fuente/departamento, verás cómo cambia la distribución.
+""",
+        fig=fig_cobertura_regulacion(df),
+        key="cobertura_reg_bar",
+    )
 
     st.divider()
     st.subheader("Disponibilidad (%) por fuente")
@@ -138,9 +269,28 @@ def page_impacto(df: pd.DataFrame):
     st.subheader("Impacto ambiental")
     a, b = st.columns(2)
     with a:
-        st.plotly_chart(fig_impacto_rank(df, "co2_evitado_ton"), use_container_width=True, key="impacto_top_co2")
+        chart_with_info(
+            title="Top 10 por CO2 evitado (ton)",
+            info_md="""
+Ranking de los 10 proyectos con mayor **CO2 evitado**.
+
+- Valores más altos = mayor aporte a mitigación.
+- Útil para priorización de proyectos por impacto.
+""",
+            fig=fig_impacto_rank(df, "co2_evitado_ton"),
+            key="impacto_top_co2",
+        )
     with b:
-        st.plotly_chart(fig_impacto_rank(df, "ahorro_agua_m3"), use_container_width=True, key="impacto_top_agua")
+        chart_with_info(
+            title="Top 10 por ahorro de agua (m3)",
+            info_md="""
+Ranking de los 10 proyectos con mayor **ahorro de agua**.
+
+- Útil para evaluar beneficios ambientales complementarios a la generación.
+""",
+            fig=fig_impacto_rank(df, "ahorro_agua_m3"),
+            key="impacto_top_agua",
+        )
 
     st.divider()
     st.subheader("Relación: CO₂ evitado vs capacidad")
@@ -180,7 +330,17 @@ def page_proyectos(df: pd.DataFrame):
     c3.metric("LCOE (USD/MWh)", kpi_card_value(base.get("lcoe_usd_mwh"), 2))
     c4.metric("CO₂ evitado (ton)", kpi_card_value(base.get("co2_evitado_ton"), 0))
 
-    st.plotly_chart(fig_generacion_time(d, freq="M"), use_container_width=True, key=f"proyecto_gen_m_{int(base['id_proyecto'])}")
+    chart_with_info(
+        title="Generación mensual del proyecto (GWh)",
+        info_md="""
+Serie agregada por mes para el proyecto seleccionado.
+
+- Útil para ver **consistencia**, picos y caídas.
+- Complementa la tabla diaria de abajo para detalle.
+""",
+        fig=fig_generacion_time(d, freq="M"),
+        key=f"proyecto_gen_m_{int(base['id_proyecto'])}",
+    )
     st.dataframe(
         d.sort_values("fecha")[["fecha", "generacion_gwh", "factor_planta_pct"]].dropna(),
         use_container_width=True,
@@ -189,23 +349,8 @@ def page_proyectos(df: pd.DataFrame):
 
 
 def page_landing(raw_dir: Path):
-    st.subheader("Análisis de la Matriz Energética de Colombia (2020–2025)")
-    st.caption("Dashboard interactivo construido en Streamlit a partir de un modelo tipo estrella (dimensiones + hechos).")
-
-    hero_path = ASSETS_DIR / "landing_hero.svg"
-    if hero_path.exists():
-        # Render de SVG robusto (PIL no soporta SVG en st.image con bytes).
-        b64 = base64.b64encode(hero_path.read_bytes()).decode("ascii")
-        st.markdown(
-            f"""
-<img
-  src="data:image/svg+xml;base64,{b64}"
-  alt="Matriz energetica: hidraulica, solar y eolica"
-  style="width: 100%; height: auto; display: block; border-radius: 14px;"
-/>
-""",
-            unsafe_allow_html=True,
-        )
+    st.subheader("¿De qué trata este análisis?")
+    st.caption("Landing page para entender el objetivo, datos y cómo navegar el dashboard.")
 
     c1, c2 = st.columns([1.3, 1])
     with c1:
@@ -276,7 +421,7 @@ Usa filtros globales para segmentar por **fuente**, **departamento**, **proyecto
 
 def main():
     st.set_page_config(page_title="Matriz Energética Colombia", layout="wide")
-    st.title("Matriz Energética de Colombia (app Streamlit)")
+    render_hero_header("Matriz Energética de Colombia")
 
     df, _tables, raw_dir, issues = get_data()
     filtered = apply_filters(df)
@@ -291,9 +436,33 @@ def main():
 
     with tabs[2]:
         st.subheader("Generación")
-        st.plotly_chart(fig_generacion_time(filtered, freq="D"), use_container_width=True, key="gen_d")
-        st.plotly_chart(fig_generacion_time(filtered, freq="M"), use_container_width=True, key="gen_m")
-        st.plotly_chart(fig_generacion_por_fuente(filtered), use_container_width=True, key="gen_fuente")
+        chart_with_info(
+            title="Generación diaria (GWh)",
+            info_md="""
+Serie diaria de generación para el conjunto filtrado.
+
+- Útil para ver **volatilidad** día a día.
+- Si el rango de fechas es grande, usa la vista mensual para tendencia.
+""",
+            fig=fig_generacion_time(filtered, freq="D"),
+            key="gen_d",
+        )
+        chart_with_info(
+            title="Generación mensual (GWh)",
+            info_md="""
+Agregación mensual para ver la **tendencia** de forma más estable.
+""",
+            fig=fig_generacion_time(filtered, freq="M"),
+            key="gen_m",
+        )
+        chart_with_info(
+            title="Generación total por fuente (GWh)",
+            info_md="""
+Distribución de la generación total por tipo de fuente bajo tus filtros.
+""",
+            fig=fig_generacion_por_fuente(filtered),
+            key="gen_fuente",
+        )
 
     with tabs[3]:
         page_costos(filtered)
