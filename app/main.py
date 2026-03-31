@@ -102,9 +102,154 @@ def render_hero_header(title: str = "Matriz Energética de Colombia"):
 
 def chart_with_info(*, title: str, info_md: str, fig, key: str):
     st.markdown(f"### {title}")
-    with st.expander("¿Qué muestra este gráfico? ¿Cómo interpretarlo?", expanded=False):
-        st.markdown(info_md)
     st.plotly_chart(fig, use_container_width=True, key=key)
+    st.info(info_md)
+
+
+def _fmt_num(x: float | int | None, decimals: int = 1) -> str:
+    if x is None or (isinstance(x, float) and pd.isna(x)):
+        return "—"
+    try:
+        return f"{float(x):,.{decimals}f}"
+    except Exception:
+        return "—"
+
+
+def _pick_top(series: pd.Series, ascending: bool = False):
+    s = series.dropna()
+    if s.empty:
+        return None, None
+    s = s.sort_values(ascending=ascending)
+    return s.index[0 if ascending else -1], float(s.iloc[0 if ascending else -1])
+
+
+def insights_overall(df: pd.DataFrame) -> str:
+    d = df.dropna(subset=["fuente", "generacion_gwh"]).copy()
+    if d.empty:
+        return "No hay datos suficientes con los filtros actuales para generar insights."
+
+    gen_by = d.groupby("fuente")["generacion_gwh"].sum()
+    fuente_top, gen_top = _pick_top(gen_by, ascending=False)
+    gen_total = float(gen_by.sum())
+    pct = (gen_top / gen_total * 100.0) if gen_total else None
+
+    # Desempeño ambiental: CO2 evitado por GWh (mayor = mejor)
+    # Usamos CO2 evitado (hecho estático por proyecto) + generación (hecho temporal).
+    d2 = d.drop_duplicates(subset=["id_proyecto", "fuente"])[["id_proyecto", "fuente", "co2_evitado_ton"]].merge(
+        d.groupby(["id_proyecto", "fuente"], as_index=False)["generacion_gwh"].sum(),
+        on=["id_proyecto", "fuente"],
+        how="inner",
+    )
+    d2 = d2.dropna(subset=["co2_evitado_ton", "generacion_gwh"])
+    if not d2.empty and (d2["generacion_gwh"] > 0).any():
+        env = d2.groupby("fuente").apply(lambda x: float(x["co2_evitado_ton"].sum() / x["generacion_gwh"].sum()))
+        fuente_best_env, best_val = _pick_top(env, ascending=False)
+        fuente_worst_env, worst_val = _pick_top(env, ascending=True)
+        improvement = ((best_val / worst_val - 1) * 100.0) if worst_val else None
+        env_line = (
+            f"La fuente con **mejor desempeño ambiental** (mayor CO₂ evitado por GWh) es **{fuente_best_env}**, "
+            f"con ~{_fmt_num(best_val, 2)} ton CO₂ evitadas/GWh. "
+            + (
+                f"Esto es ~{_fmt_num(improvement, 1)}% superior frente a **{fuente_worst_env}**."
+                if improvement is not None and improvement != float("inf")
+                else ""
+            )
+        )
+    else:
+        env_line = "No hay datos suficientes para calcular CO₂ evitado por GWh con los filtros actuales."
+
+    # Costos: LCOE promedio por fuente (menor = mejor)
+    c = df.dropna(subset=["fuente", "lcoe_usd_mwh"]).copy()
+    c = c.sort_values(["id_proyecto", "anio"]).drop_duplicates("id_proyecto", keep="last")
+    if not c.empty:
+        lcoe_by = c.groupby("fuente")["lcoe_usd_mwh"].mean()
+        fuente_min_cost, lcoe_min = _pick_top(lcoe_by, ascending=True)
+        cost_line = (
+            f"La fuente con **menor costo promedio (LCOE)** es **{fuente_min_cost}**, "
+            f"con ~${_fmt_num(lcoe_min, 2)} USD/MWh."
+        )
+    else:
+        cost_line = "No hay datos suficientes de LCOE para el periodo/filtros actuales."
+
+    return (
+        f"La fuente con **mayor generación** en el periodo filtrado es **{fuente_top}**, "
+        f"con ~{_fmt_num(gen_top, 1)} GWh, lo que representa cerca del **{_fmt_num(pct, 1)}%** del total.\n\n"
+        f"{env_line}\n\n"
+        f"{cost_line}"
+    )
+
+
+def insights_generacion(df: pd.DataFrame) -> str:
+    d = df.dropna(subset=["fuente", "generacion_gwh", "fecha"]).copy()
+    if d.empty:
+        return "No hay datos suficientes de generación con los filtros actuales."
+
+    gen_by = d.groupby("fuente")["generacion_gwh"].sum()
+    fuente_top, gen_top = _pick_top(gen_by, ascending=False)
+    gen_total = float(gen_by.sum())
+    pct = (gen_top / gen_total * 100.0) if gen_total else None
+
+    # Variabilidad: std diaria por fuente (más alta = más variable)
+    daily = d.groupby(["fuente", "fecha"], as_index=False)["generacion_gwh"].sum()
+    var = daily.groupby("fuente")["generacion_gwh"].std()
+    fuente_var, var_val = _pick_top(var, ascending=False)
+
+    return (
+        f"Con los filtros actuales, **{fuente_top}** lidera la generación con ~{_fmt_num(gen_top, 1)} GWh "
+        f"(**{_fmt_num(pct, 1)}%** del total). "
+        + (
+            f"La fuente con mayor variabilidad diaria es **{fuente_var}** (σ ~{_fmt_num(var_val, 2)} GWh/día)."
+            if fuente_var is not None and var_val is not None
+            else ""
+        )
+    )
+
+
+def insights_costos(df: pd.DataFrame) -> str:
+    c = df.dropna(subset=["fuente", "lcoe_usd_mwh"]).copy()
+    c = c.sort_values(["id_proyecto", "anio"]).drop_duplicates("id_proyecto", keep="last")
+    if c.empty:
+        return "No hay datos suficientes de costos (LCOE) con los filtros actuales."
+
+    lcoe_by = c.groupby("fuente")["lcoe_usd_mwh"].mean()
+    fuente_min, lcoe_min = _pick_top(lcoe_by, ascending=True)
+    fuente_max, lcoe_max = _pick_top(lcoe_by, ascending=False)
+    gap = (lcoe_max - lcoe_min) if (lcoe_max is not None and lcoe_min is not None) else None
+
+    return (
+        f"El **LCOE promedio más bajo** es **{fuente_min}** (~${_fmt_num(lcoe_min, 2)} USD/MWh). "
+        + (
+            f"La más costosa es **{fuente_max}** (~${_fmt_num(lcoe_max, 2)} USD/MWh), con una brecha de ~${_fmt_num(gap, 2)}."
+            if gap is not None
+            else ""
+        )
+    )
+
+
+def insights_cobertura(df: pd.DataFrame) -> str:
+    d = df.drop_duplicates("id_proyecto").dropna(subset=["usuarios"]).copy()
+    if d.empty:
+        return "No hay datos suficientes de cobertura (usuarios) con los filtros actuales."
+
+    total_users = float(d["usuarios"].sum())
+    by_fuente = d.groupby("fuente")["usuarios"].sum().dropna()
+    fuente_top, u_top = _pick_top(by_fuente, ascending=False)
+    pct = (u_top / total_users * 100.0) if total_users else None
+
+    return (
+        f"En cobertura, **{fuente_top}** concentra ~{_fmt_num(u_top, 0)} usuarios "
+        f"(~{_fmt_num(pct, 1)}% del total filtrado)."
+    )
+
+
+def insights_impacto(df: pd.DataFrame) -> str:
+    d = df.drop_duplicates("id_proyecto").dropna(subset=["co2_evitado_ton", "fuente"]).copy()
+    if d.empty:
+        return "No hay datos suficientes de impacto ambiental con los filtros actuales."
+
+    co2_by = d.groupby("fuente")["co2_evitado_ton"].sum()
+    fuente_top, co2_top = _pick_top(co2_by, ascending=False)
+    return f"Por impacto, **{fuente_top}** lidera el **CO₂ evitado** con ~{_fmt_num(co2_top, 0)} ton (acumulado en el set filtrado)."
 
 
 def apply_filters(df: pd.DataFrame) -> pd.DataFrame:
@@ -151,6 +296,8 @@ def page_resumen(df: pd.DataFrame, raw_dir: Path, issues: list[str]):
         with st.expander("Calidad de datos (advertencias)", expanded=True):
             for i in issues:
                 st.warning(i)
+
+    st.success(insights_overall(df))
 
     total_gwh = df["generacion_gwh"].sum(skipna=True)
     n_proyectos = df["id_proyecto"].nunique(dropna=True)
@@ -204,6 +351,7 @@ El **factor de planta** mide qué tanto se utiliza la capacidad instalada de un 
 
 def page_costos(df: pd.DataFrame):
     st.subheader("Costos")
+    st.success(insights_costos(df))
     chart_with_info(
         title="LCOE vs CAPEX (tamaño = capacidad MW)",
         info_md="""
@@ -235,6 +383,7 @@ Interpretación rápida:
 
 def page_cobertura(df: pd.DataFrame):
     st.subheader("Cobertura y regulación")
+    st.success(insights_cobertura(df))
     chart_with_info(
         title="Usuarios atendidos por regulación",
         info_md="""
@@ -271,6 +420,7 @@ Suma los **usuarios atendidos** (por proyecto) agrupados por la **ley/incentivo*
 
 def page_impacto(df: pd.DataFrame):
     st.subheader("Impacto ambiental")
+    st.success(insights_impacto(df))
     a, b = st.columns(2)
     with a:
         chart_with_info(
@@ -441,6 +591,7 @@ def main():
 
     with tabs[2]:
         st.subheader("Generación")
+        st.success(insights_generacion(filtered))
         chart_with_info(
             title="Generación diaria (GWh)",
             info_md="""
