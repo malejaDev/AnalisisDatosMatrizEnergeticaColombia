@@ -35,7 +35,7 @@
 |---|---|---|
 | 🗄️ Base de datos | Esquema + datos de ejemplo (2020–2025) | ✅ Listo |
 | 🧠 Consultas SQL | Consultas analíticas (Q01–Q28) | ✅ Listo |
-| 📓 Notebooks | EDA / limpieza / visualizaciones | ⏳ Pendiente |
+| 📓 Notebooks | EDA / limpieza / visualizaciones | ✅ 1 notebook |
 | 📁 Datos | Dataset(s) (o instrucciones de descarga) | ⏳ Pendiente |
 | 📈 Resultados | Hallazgos + gráficas + conclusiones | ⏳ Pendiente |
 | 🧾 Fuentes | Fuentes oficiales + supuestos + licencia | ⏳ Pendiente |
@@ -49,6 +49,7 @@
 
 - 🧱 **Crear/cargar datos**: `database/Matriz_Energetica_Colombia_Schema_y_Datos_2020_2025.sql`
 - 🔍 **Ejecutar análisis**: `database/Consultas_Analisis_Matriz_Energetica_Colombia.sql`
+- 📓 **Ver notebook EDA**: `Notebooks/01_eda_exploratorio.ipynb`
 
 <a id="integrantes"></a>
 ## 👥 Integrantes
@@ -71,6 +72,7 @@ Analizar la **diversificación de la matriz energética en Colombia** usando un 
 - `database/`
   - `Matriz_Energetica_Colombia_Schema_y_Datos_2020_2025.sql`: crea el esquema, tablas e inserta datos.
   - `Consultas_Analisis_Matriz_Energetica_Colombia.sql`: consultas para análisis (requiere el script anterior).
+- `Notebooks/`: notebooks del análisis (por ejemplo: `Notebooks/01_eda_exploratorio.ipynb`).
 - `LICENSE`: licencia del repositorio.
 
 <a id="requisitos"></a>
