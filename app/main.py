@@ -83,18 +83,18 @@ def page_resumen(df: pd.DataFrame, raw_dir: Path, issues: list[str]):
     c3.metric("Usuarios atendidos", kpi_card_value(total_usuarios, 0))
     c4.metric("CO₂ evitado (ton)", kpi_card_value(total_co2, 0))
 
-    st.plotly_chart(fig_generacion_time(df, freq="M"), use_container_width=True)
+    st.plotly_chart(fig_generacion_time(df, freq="M"), use_container_width=True, key="resumen_gen_m")
 
     a, b = st.columns(2)
     with a:
-        st.plotly_chart(fig_generacion_por_fuente(df), use_container_width=True)
+        st.plotly_chart(fig_generacion_por_fuente(df), use_container_width=True, key="resumen_gen_fuente")
     with b:
-        st.plotly_chart(fig_factor_planta_box(df), use_container_width=True)
+        st.plotly_chart(fig_factor_planta_box(df), use_container_width=True, key="resumen_factor_box")
 
 
 def page_costos(df: pd.DataFrame):
     st.subheader("Costos")
-    st.plotly_chart(fig_costos_scatter(df), use_container_width=True)
+    st.plotly_chart(fig_costos_scatter(df), use_container_width=True, key="costos_scatter")
 
     st.divider()
     st.subheader("Tabla (último año de costos por proyecto)")
@@ -110,7 +110,7 @@ def page_costos(df: pd.DataFrame):
 
 def page_cobertura(df: pd.DataFrame):
     st.subheader("Cobertura y regulación")
-    st.plotly_chart(fig_cobertura_regulacion(df), use_container_width=True)
+    st.plotly_chart(fig_cobertura_regulacion(df), use_container_width=True, key="cobertura_reg_bar")
 
     st.divider()
     st.subheader("Disponibilidad (%) por fuente")
@@ -128,6 +128,7 @@ def page_cobertura(df: pd.DataFrame):
                 title="Disponibilidad promedio por fuente (%)",
             ),
             use_container_width=True,
+            key="cobertura_disp_bar",
         )
 
 
@@ -135,9 +136,9 @@ def page_impacto(df: pd.DataFrame):
     st.subheader("Impacto ambiental")
     a, b = st.columns(2)
     with a:
-        st.plotly_chart(fig_impacto_rank(df, "co2_evitado_ton"), use_container_width=True)
+        st.plotly_chart(fig_impacto_rank(df, "co2_evitado_ton"), use_container_width=True, key="impacto_top_co2")
     with b:
-        st.plotly_chart(fig_impacto_rank(df, "ahorro_agua_m3"), use_container_width=True)
+        st.plotly_chart(fig_impacto_rank(df, "ahorro_agua_m3"), use_container_width=True, key="impacto_top_agua")
 
     st.divider()
     st.subheader("Relación: CO₂ evitado vs capacidad")
@@ -157,6 +158,7 @@ def page_impacto(df: pd.DataFrame):
                 title="CO₂ evitado (ton) vs capacidad (MW)",
             ),
             use_container_width=True,
+            key="impacto_scatter_cap_co2",
         )
 
 
@@ -176,7 +178,7 @@ def page_proyectos(df: pd.DataFrame):
     c3.metric("LCOE (USD/MWh)", kpi_card_value(base.get("lcoe_usd_mwh"), 2))
     c4.metric("CO₂ evitado (ton)", kpi_card_value(base.get("co2_evitado_ton"), 0))
 
-    st.plotly_chart(fig_generacion_time(d, freq="M"), use_container_width=True)
+    st.plotly_chart(fig_generacion_time(d, freq="M"), use_container_width=True, key=f"proyecto_gen_m_{int(base['id_proyecto'])}")
     st.dataframe(
         d.sort_values("fecha")[["fecha", "generacion_gwh", "factor_planta_pct"]].dropna(),
         use_container_width=True,
@@ -198,9 +200,9 @@ def main():
 
     with tabs[1]:
         st.subheader("Generación")
-        st.plotly_chart(fig_generacion_time(filtered, freq="D"), use_container_width=True)
-        st.plotly_chart(fig_generacion_time(filtered, freq="M"), use_container_width=True)
-        st.plotly_chart(fig_generacion_por_fuente(filtered), use_container_width=True)
+        st.plotly_chart(fig_generacion_time(filtered, freq="D"), use_container_width=True, key="gen_d")
+        st.plotly_chart(fig_generacion_time(filtered, freq="M"), use_container_width=True, key="gen_m")
+        st.plotly_chart(fig_generacion_por_fuente(filtered), use_container_width=True, key="gen_fuente")
 
     with tabs[2]:
         page_costos(filtered)
