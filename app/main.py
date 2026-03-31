@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 from pathlib import Path
 
 import pandas as pd
@@ -193,8 +194,18 @@ def page_landing(raw_dir: Path):
 
     hero_path = ASSETS_DIR / "landing_hero.svg"
     if hero_path.exists():
-        # Streamlit puede leer SVG como texto; usamos bytes para evitar problemas de encoding en algunos deploys.
-        st.image(hero_path.read_bytes(), use_container_width=True)
+        # Render de SVG robusto (PIL no soporta SVG en st.image con bytes).
+        b64 = base64.b64encode(hero_path.read_bytes()).decode("ascii")
+        st.markdown(
+            f"""
+<img
+  src="data:image/svg+xml;base64,{b64}"
+  alt="Matriz energetica: hidraulica, solar y eolica"
+  style="width: 100%; height: auto; display: block; border-radius: 14px;"
+/>
+""",
+            unsafe_allow_html=True,
+        )
 
     c1, c2 = st.columns([1.3, 1])
     with c1:
