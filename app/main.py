@@ -8,6 +8,8 @@ import streamlit as st
 
 from app.data_loader import build_consolidated_dataset, load_tables
 from app.viz import (
+    ENERGY_COLOR_MAP,
+    color_map_for,
     fig_cobertura_regulacion,
     fig_costos_scatter,
     fig_factor_planta_box,
@@ -258,6 +260,8 @@ Suma los **usuarios atendidos** (por proyecto) agrupados por la **ley/incentivo*
                 d.groupby("fuente", as_index=False)["disponibilidad_pct"].mean(),
                 x="fuente",
                 y="disponibilidad_pct",
+                color="fuente",
+                color_discrete_map=color_map_for(d, "fuente"),
                 title="Disponibilidad promedio por fuente (%)",
             ),
             use_container_width=True,
@@ -306,6 +310,7 @@ Ranking de los 10 proyectos con mayor **ahorro de agua**.
                 x="capacidad_mw",
                 y="co2_evitado_ton",
                 color="fuente",
+                color_discrete_map=color_map_for(d, "fuente"),
                 hover_name="nombre",
                 title="CO₂ evitado (ton) vs capacidad (MW)",
             ),

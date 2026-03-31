@@ -4,6 +4,25 @@ import pandas as pd
 import plotly.express as px
 
 
+ENERGY_COLOR_MAP: dict[str, str] = {
+    "Solar": "#F59E0B",  # amarillo/ambar
+    "Eólica": "#16A34A",  # verde
+    "Hidráulica": "#2563EB",  # azul
+    "Geotérmica": "#F97316",  # naranja
+}
+
+
+def color_map_for(df: pd.DataFrame, col: str = "fuente") -> dict[str, str]:
+    """
+    Retorna un color_discrete_map consistente para las categorías presentes.
+    Si aparece una fuente no contemplada, Plotly asignará un color por defecto.
+    """
+    if col not in df.columns:
+        return ENERGY_COLOR_MAP
+    present = set(df[col].dropna().unique().tolist())
+    return {k: v for k, v in ENERGY_COLOR_MAP.items() if k in present} | ENERGY_COLOR_MAP
+
+
 def kpi_card_value(value, decimals: int = 2) -> str:
     if value is None:
         return "—"
@@ -32,14 +51,29 @@ def fig_generacion_por_fuente(df: pd.DataFrame):
     if d.empty:
         return px.bar(title="Generación por fuente")
     agg = d.groupby("fuente", as_index=False)["generacion_gwh"].sum().sort_values("generacion_gwh", ascending=False)
-    return px.bar(agg, x="fuente", y="generacion_gwh", title="Generación total por fuente (GWh)")
+    return px.bar(
+        agg,
+        x="fuente",
+        y="generacion_gwh",
+        color="fuente",
+        color_discrete_map=color_map_for(agg, "fuente"),
+        title="Generación total por fuente (GWh)",
+    )
 
 
 def fig_factor_planta_box(df: pd.DataFrame):
     d = df.dropna(subset=["fuente", "factor_planta_pct"]).copy()
     if d.empty:
         return px.box(title="Factor planta")
-    return px.box(d, x="fuente", y="factor_planta_pct", points="outliers", title="Distribución de factor de planta (%)")
+    return px.box(
+        d,
+        x="fuente",
+        y="factor_planta_pct",
+        color="fuente",
+        color_discrete_map=color_map_for(d, "fuente"),
+        points="outliers",
+        title="Distribución de factor de planta (%)",
+    )
 
 
 def fig_costos_scatter(df: pd.DataFrame):
@@ -54,6 +88,7 @@ def fig_costos_scatter(df: pd.DataFrame):
         y="lcoe_usd_mwh",
         size="capacidad_mw",
         color="fuente",
+        color_discrete_map=color_map_for(d, "fuente"),
         hover_name="nombre",
         title="LCOE vs CAPEX (tamaño = capacidad MW)",
         labels={"capex_musd": "CAPEX (MUSD)", "lcoe_usd_mwh": "LCOE (USD/MWh)"},
@@ -78,5 +113,12 @@ def fig_impacto_rank(df: pd.DataFrame, metric: str):
     d = d.drop_duplicates("id_proyecto")
     d = d.sort_values(metric, ascending=False).head(10)
     title = "Top 10 por CO₂ evitado (ton)" if metric == "co2_evitado_ton" else "Top 10 por ahorro de agua (m³)"
-    return px.bar(d, x="nombre", y=metric, color="fuente", title=title)
+    return px.bar(
+        d,
+        x="nombre",
+        y=metric,
+        color="fuente",
+        color_discrete_map=color_map_for(d, "fuente"),
+        title=title,
+    )
 
