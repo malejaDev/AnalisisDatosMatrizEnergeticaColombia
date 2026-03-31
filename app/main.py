@@ -193,7 +193,8 @@ def page_landing(raw_dir: Path):
 
     hero_path = ASSETS_DIR / "landing_hero.svg"
     if hero_path.exists():
-        st.image(str(hero_path), use_container_width=True)
+        # Streamlit puede leer SVG como texto; usamos bytes para evitar problemas de encoding en algunos deploys.
+        st.image(hero_path.read_bytes(), use_container_width=True)
 
     c1, c2 = st.columns([1.3, 1])
     with c1:
