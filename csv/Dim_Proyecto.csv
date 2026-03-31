@@ -1,0 +1,8 @@
+id_proyecto,nombre,depto,id_tipo,capacidad_mw
+101,Hidroituango,Antioquia,1,2400
+102,Guavio,Cundinamarca,1,1213
+201,La Loma,Cesar,2,187
+202,Celsia Solar,Tolima,2,80
+301,Guajira I,La Guajira,3,20
+302,Alpha Wind,La Guajira,3,504
+401,Nereidas,Caldas,4,50

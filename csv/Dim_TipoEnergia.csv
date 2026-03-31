@@ -1,0 +1,5 @@
+id_tipo_energia,fuente,es_convencional,descripcion
+1,Hidráulica,1,Embalses y Filo de agua
+2,Solar,0,Fotovoltaica Utility Scale
+3,Eólica,0,Aerogeneradores Onshore
+4,Geotérmica,0,Vapor de alta entalpía

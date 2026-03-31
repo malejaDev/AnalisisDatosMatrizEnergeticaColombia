@@ -137,6 +137,43 @@ En `database/Consultas_Analisis_Matriz_Energetica_Colombia.sql` hay consultas pa
 - [ ] Documentar el diccionario de datos y definición de métricas.
 - [ ] Publicar conclusiones finales del proyecto.
 
+---
+
+## 🖥️ App interactiva (Streamlit)
+
+Esta app consolida los CSV del modelo estrella (dimensiones + hechos) y expone un dashboard interactivo con filtros globales.
+
+### Estructura de datos (opción B)
+
+- **Preferido**: `data/raw/*.csv`
+- **Fallback**: `csv/*.csv` (compatibilidad)
+
+Archivos esperados:
+
+- `Dim_Proyecto.csv`
+- `Dim_TipoEnergia.csv`
+- `Dim_Regulacion.csv`
+- `Fact_Generacion_1000.csv`
+- `Fact_Costos.csv`
+- `Fact_Cobertura.csv`
+- `Fact_ImpactoAmbiental.csv`
+
+### Cómo ejecutar
+
+1) Crear y activar entorno (ejemplo):
+
+```bash
+python -m venv .venv
+.\.venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+2) Ejecutar:
+
+```bash
+streamlit run app/main.py
+```
+
 <a id="licencia"></a>
 ## 📄 Licencia
 

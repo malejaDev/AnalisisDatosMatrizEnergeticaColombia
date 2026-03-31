@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Data (keep raw optional; don't ignore csv/ by default)
+data/processed/
+data/interim/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+
