@@ -46,18 +46,44 @@ def render_hero_header(title: str = "Matriz Energética de Colombia"):
     st.markdown(
         f"""
 <style>
-  /* ---------- Sidebar navigation UX ---------- */
-  /* Make radio options feel like a nav list */
-  section[data-testid="stSidebar"] label p {{
-    font-size: 0.95rem;
-    font-weight: 600;
+  /* ---------- Tabs UX ---------- */
+  /* Make tabs feel like a primary navigation bar */
+  div[data-testid="stTabs"] {{
+    margin-top: 0.25rem;
   }}
-  section[data-testid="stSidebar"] div[role="radiogroup"] > label {{
+  div[data-testid="stTabs"] [data-baseweb="tab-list"] {{
+    gap: 0.35rem;
+    padding: 0.25rem 0.25rem;
+    border-radius: 14px;
+    background: rgba(15, 23, 42, 0.04);
+  }}
+  div[data-testid="stTabs"] button[data-baseweb="tab"] {{
+    padding: 0.55rem 0.85rem;
     border-radius: 12px;
-    padding: 0.15rem 0.35rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    line-height: 1.1;
+    color: rgba(15, 23, 42, 0.82);
   }}
-  section[data-testid="stSidebar"] div[role="radiogroup"] > label:hover {{
-    background: rgba(14, 165, 164, 0.08);
+  div[data-testid="stTabs"] button[data-baseweb="tab"]:hover {{
+    background: rgba(14, 165, 164, 0.10);
+    color: rgba(15, 23, 42, 0.95);
+  }}
+  /* Active tab */
+  div[data-testid="stTabs"] button[aria-selected="true"][data-baseweb="tab"] {{
+    background: rgba(14, 165, 164, 0.16);
+    color: rgba(15, 23, 42, 0.98);
+    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04) inset;
+  }}
+  /* Allow wrapping on small screens instead of truncating */
+  @media (max-width: 900px) {{
+    div[data-testid="stTabs"] [data-baseweb="tab-list"] {{
+      flex-wrap: wrap;
+    }}
+    div[data-testid="stTabs"] button[data-baseweb="tab"] {{
+      padding: 0.5rem 0.75rem;
+      font-size: 0.92rem;
+    }}
   }}
 
   .hero-wrap {{
@@ -595,23 +621,15 @@ def main():
     df, _tables, raw_dir, issues = get_data()
     filtered = apply_filters(df)
 
-    with st.sidebar:
-        st.divider()
-        section = st.radio(
-            "Sección",
-            ["Inicio", "Resumen", "Generación", "Costos", "Cobertura", "Impacto", "Proyectos"],
-            index=0,
-        )
+    tabs = st.tabs(["Inicio", "Resumen", "Generación", "Costos", "Cobertura", "Impacto", "Proyectos"])
 
-    if section == "Inicio":
+    with tabs[0]:
         page_landing(raw_dir)
-        return
 
-    if section == "Resumen":
+    with tabs[1]:
         page_resumen(filtered, raw_dir, issues)
-        return
 
-    if section == "Generación":
+    with tabs[2]:
         st.subheader("Generación")
         st.success(insights_generacion(filtered))
         chart_with_info(
@@ -641,23 +659,18 @@ Distribución de la generación total por tipo de fuente bajo tus filtros.
             fig=fig_generacion_por_fuente(filtered),
             key="gen_fuente",
         )
-        return
 
-    if section == "Costos":
+    with tabs[3]:
         page_costos(filtered)
-        return
 
-    if section == "Cobertura":
+    with tabs[4]:
         page_cobertura(filtered)
-        return
 
-    if section == "Impacto":
+    with tabs[5]:
         page_impacto(filtered)
-        return
 
-    if section == "Proyectos":
+    with tabs[6]:
         page_proyectos(filtered)
-        return
 
 
 if __name__ == "__main__":
